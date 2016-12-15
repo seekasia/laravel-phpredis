@@ -7,6 +7,7 @@ use Barbery\Extensions\RedisConnector;
 use Barbery\Extensions\RedisStore;
 use Barbery\Extensions\Repository;
 use Cache;
+use Queue;
 use Illuminate\Support\Arr;
 use Illuminate\Support\ServiceProvider;
 
