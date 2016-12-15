@@ -26,7 +26,9 @@ class RedisServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        Cache::extend('redis', function ($app, $config) {
+        Cache::extend('redis', function ($app) {
+            $config = $this->app['config']['cache.redis'];
+
             $store = new RedisStore(
                 $app['redis'],
                 Arr::get($config, 'prefix') ?: $this->app['config']['cache.prefix'],
@@ -44,7 +46,7 @@ class RedisServiceProvider extends ServiceProvider
             return $repository;
         });
 
-        \Queue::extend('redis', function () {
+        Queue::extend('redis', function () {
             return new RedisConnector(app('redis'));
         });
     }
