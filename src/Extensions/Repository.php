@@ -30,14 +30,11 @@ class Repository extends \Illuminate\Cache\Repository
             return $this->many($key);
         }
 
-        $value = $this->store->get($this->itemKey($key));
+        $value = $this->store->get($key);
 
         if ($value === null || $value === false) {
-            $this->fireCacheEvent('missed', [$key]);
 
             $value = value($default);
-        } else {
-            $this->fireCacheEvent('hit', [$key, $value]);
         }
 
         return $value;
