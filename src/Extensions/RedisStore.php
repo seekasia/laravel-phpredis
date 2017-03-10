@@ -1,7 +1,7 @@
 <?php
 namespace Barbery\Extensions;
 
-// use Closure;
+use RedisClusterException;
 
 /**
  *
@@ -11,6 +11,7 @@ class RedisStore extends \Illuminate\Cache\RedisStore
     protected $defaultUnit;
     protected $encodeFunc;
     protected $decodeFunc;
+    protected $retryLimit;
 
     /**
      * Retrieve an item from the cache by key.
@@ -20,7 +21,21 @@ class RedisStore extends \Illuminate\Cache\RedisStore
      */
     public function get($key)
     {
-        $value = $this->connection()->get($this->prefix . $key);
+        $retries = 0;
+
+        GET_RETRY: {
+            try {
+                $value = $this->connection()->get($this->prefix . $key);
+            } catch (RedisClusterException $exception) {
+                if ($retries == $this->retryLimit) {
+                    throw $exception;
+                }
+
+                ++$retries;
+                goto GET_RETRY;
+            }
+        }
+
         if ($value !== null && $value !== false) {
             return is_numeric($value) ? $value : call_user_func($this->decodeFunc, $value);
         }
@@ -40,7 +55,20 @@ class RedisStore extends \Illuminate\Cache\RedisStore
 
         $time = max(1, $this->translateToSeconds($time));
 
-        $this->connection()->setex($this->prefix . $key, $time, $value);
+        $retries = 0;
+
+        PUT_RETRY: {
+            try {
+                $this->connection()->setex($this->prefix . $key, $time, $value);
+            } catch (RedisClusterException $exception) {
+                if ($retries == $this->retryLimit) {
+                    throw $exception;
+                }
+
+                ++$retries;
+                goto PUT_RETRY;
+            }
+        }
     }
 
     private function translateToSeconds($time)
@@ -139,6 +167,12 @@ class RedisStore extends \Illuminate\Cache\RedisStore
     public function setDecodeFunc(callable $decodeFunc)
     {
         $this->decodeFunc = $decodeFunc;
+        return $this;
+    }
+
+    public function setRetryLimit($retryLimit)
+    {
+        $this->retryLimit = $retryLimit;
         return $this;
     }
 }

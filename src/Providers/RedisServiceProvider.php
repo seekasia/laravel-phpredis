@@ -41,6 +41,8 @@ class RedisServiceProvider extends ServiceProvider
                 Arr::get($config, 'encodeFunc', 'serialize')
             )->setDecodeFunc(
                 Arr::get($config, 'decodeFunc', 'unserialize')
+            )->setRetryLimit(
+                Arr::get($config, 'retryLimit', 1)
             );
 
             $repository = new Repository($store);
